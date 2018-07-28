@@ -174,5 +174,10 @@ RUN set -eux; \
     \
     apt-get purge -y --auto-remove $buildDeps
 
+RUN mkdir -p /svn/repos \
+    && mkdir -p /svn/config \
+    && chown www-data:www-data /svn
+VOLUME ["/svn"]
+
 EXPOSE 80
 CMD ["httpd-foreground"]
