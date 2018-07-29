@@ -3,9 +3,6 @@ LABEL name="httpd-svn" \
       description="Apache httpd with Subversion" \
       maintainer="erik.wramner@codemint.com"
 
-# add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
-#RUN groupadd -r www-data && useradd -r --create-home -g www-data www-data
-
 ENV HTTPD_VERSION 2.4.34
 ENV HTTPD_SHA256 fa53c95631febb08a9de41fd2864cfff815cf62d9306723ab0d4b8d7aa1638f0
 ENV SVN_VERSION 1.10.2
@@ -16,7 +13,6 @@ ENV OPENSSL_VERSION 1.0.2l-1~bpo8+1
 ENV HTTPD_PREFIX /usr/local/apache2
 ENV PATH $HTTPD_PREFIX/bin:$PATH
 
-COPY httpd-foreground /usr/local/bin/
 RUN mkdir -p "$HTTPD_PREFIX" \
     && chown www-data:www-data "$HTTPD_PREFIX"
 WORKDIR $HTTPD_PREFIX
@@ -70,8 +66,13 @@ RUN set -eux; \
     \
     # mod_http2 mod_lua mod_proxy_html mod_xml2enc
     # https://anonscm.debian.org/cgit/pkg-apache/apache2.git/tree/debian/control?id=adb6f181257af28ee67af15fc49d2699a0080d4c
-    buildDeps=" \
+    \
+    runtimeDeps=" \
         bzip2 \
+        libsqlite3-0 \
+        zlib1g \
+    "; \
+    buildDeps=" \
         ca-certificates \
         dpkg-dev \
         gcc \
@@ -86,7 +87,7 @@ RUN set -eux; \
         wget \
     "; \
     apt-get update; \
-    apt-get install -y --no-install-recommends -V $buildDeps; \
+    apt-get install -y --no-install-recommends -V $buildDeps $runtimeDeps; \
     rm -r /var/lib/apt/lists/*; \
     \
     ddist() { \
@@ -170,14 +171,18 @@ RUN set -eux; \
     sed -ri \
         -e 's!^(\s*CustomLog)\s+\S+!\1 /proc/self/fd/1!g' \
         -e 's!^(\s*ErrorLog)\s+\S+!\1 /proc/self/fd/2!g' \
+        -e 's!^#LoadModule dav_module modules/mod_dav.so!LoadModule dav_module modules/mod_dav.so!g' \
         "$HTTPD_PREFIX/conf/httpd.conf"; \
     \
     apt-get purge -y --auto-remove $buildDeps
 
 RUN mkdir -p /svn/repos \
     && mkdir -p /svn/config \
+    && mkdir -p /svn/backup \
     && chown www-data:www-data /svn
 VOLUME ["/svn"]
+
+COPY httpd-foreground /usr/local/bin/
 
 EXPOSE 80
 CMD ["httpd-foreground"]
