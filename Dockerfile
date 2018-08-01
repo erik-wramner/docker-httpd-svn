@@ -1,7 +1,8 @@
 FROM debian:jessie-backports
 LABEL name="httpd-svn" \
       description="Apache httpd with Subversion" \
-      maintainer="erik.wramner@codemint.com"
+      maintainer="erik.wramner@codemint.com" \
+      version="2.4.34-1.10.2-01"
 
 ENV HTTPD_VERSION 2.4.34
 ENV HTTPD_SHA256 fa53c95631febb08a9de41fd2864cfff815cf62d9306723ab0d4b8d7aa1638f0
@@ -9,12 +10,16 @@ ENV SVN_VERSION 1.10.2
 ENV SVN_SHA512  ccbe860ec93a198745e40620cb7e005a85797e344a99ddbc0e24c32ad846976eae35cf5b3d62ba5751b998f0d40bbebbba72f484d92c92693bbb2112c989b129
 ENV NGHTTP2_VERSION 1.18.1-1
 ENV OPENSSL_VERSION 1.0.2l-1~bpo8+1
-
 ENV HTTPD_PREFIX /usr/local/apache2
 ENV PATH $HTTPD_PREFIX/bin:$PATH
 
-RUN mkdir -p "$HTTPD_PREFIX" \
-    && chown www-data:www-data "$HTTPD_PREFIX"
+RUN groupadd -r httpd && useradd -r -g httpd httpd \
+    && mkdir -p /svn/repos \
+    && mkdir -p /svn/config \
+    && mkdir -p /svn/backup \
+    && chown -R httpd:httpd /svn/repos
+VOLUME ["/svn"]
+
 WORKDIR $HTTPD_PREFIX
 
 RUN { \
@@ -68,12 +73,13 @@ RUN set -eux; \
     # https://anonscm.debian.org/cgit/pkg-apache/apache2.git/tree/debian/control?id=adb6f181257af28ee67af15fc49d2699a0080d4c
     \
     runtimeDeps=" \
+        ca-certificates \
         bzip2 \
         libsqlite3-0 \
+        ssl-cert \
         zlib1g \
     "; \
     buildDeps=" \
-        ca-certificates \
         dpkg-dev \
         gcc \
         liblua5.2-dev \
@@ -86,8 +92,11 @@ RUN set -eux; \
         make \
         wget \
     "; \
+    usefulTools=" \
+        net-tools \
+    "; \
     apt-get update; \
-    apt-get install -y --no-install-recommends -V $buildDeps $runtimeDeps; \
+    apt-get install -y --no-install-recommends -V $buildDeps $runtimeDeps $usefulTools; \
     rm -r /var/lib/apt/lists/*; \
     \
     ddist() { \
@@ -166,23 +175,15 @@ RUN set -eux; \
     make install; \
     \
     cd ..; \
-    rm -r src man manual; \
-    \
-    sed -ri \
-        -e 's!^(\s*CustomLog)\s+\S+!\1 /proc/self/fd/1!g' \
-        -e 's!^(\s*ErrorLog)\s+\S+!\1 /proc/self/fd/2!g' \
-        -e 's!^#LoadModule dav_module modules/mod_dav.so!LoadModule dav_module modules/mod_dav.so!g' \
-        "$HTTPD_PREFIX/conf/httpd.conf"; \
-    \
-    apt-get purge -y --auto-remove $buildDeps
-
-RUN mkdir -p /svn/repos \
-    && mkdir -p /svn/config \
-    && mkdir -p /svn/backup \
-    && chown www-data:www-data /svn
-VOLUME ["/svn"]
+    rm -r src src-svn man manual; \
+    apt-get purge -y --auto-remove $buildDeps; \
+    make-ssl-cert generate-default-snakeoil; \
+    ln -s /etc/ssl/private/ssl-cert-snakeoil.key /usr/local/apache2/conf/server.key; \
+    ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem /usr/local/apache2/conf/server.crt
 
 COPY httpd-foreground /usr/local/bin/
+COPY httpd-conf/httpd.conf $HTTPD_PREFIX/conf/
+COPY svn-conf/* /svn/config/
 
-EXPOSE 80
+EXPOSE 80 443
 CMD ["httpd-foreground"]

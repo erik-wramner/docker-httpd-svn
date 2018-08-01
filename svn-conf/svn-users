@@ -1,0 +1,7 @@
+#
+# Manage users with htpasswd.
+# Example users admin/VerySecurePassword and example_user/SecurePassword.
+# Remove or at the very least change their passwords!
+#
+admin:$2y$05$LF1a/5kpCBuQn6SIkqBvcerWFVptojSP5yqJhnoq.9a6TUwd9Wxg6
+example_user:$2y$05$XOpKemxalT6376s8cnG2w.X0I4yNkYg8C5EWO1g2vnHziJUDnl/jK
