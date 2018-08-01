@@ -181,9 +181,9 @@ RUN set -eux; \
     ln -s /etc/ssl/private/ssl-cert-snakeoil.key /usr/local/apache2/conf/server.key; \
     ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem /usr/local/apache2/conf/server.crt
 
-COPY httpd-foreground /usr/local/bin/
+COPY scripts/*.sh /usr/local/bin/
 COPY httpd-conf/httpd.conf $HTTPD_PREFIX/conf/
 COPY svn-conf/* /svn/config/
 
 EXPOSE 80 443
-CMD ["httpd-foreground"]
+CMD ["httpd-foreground.sh"]
