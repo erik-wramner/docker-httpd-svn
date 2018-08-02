@@ -18,6 +18,7 @@ RUN groupadd -r httpd && useradd -r -g httpd httpd \
     && mkdir -p /svn/config \
     && mkdir -p /svn/backup \
     && chown -R httpd:httpd /svn/repos
+COPY conf/* /svn/config/
 VOLUME ["/svn"]
 
 WORKDIR $HTTPD_PREFIX
@@ -178,12 +179,13 @@ RUN set -eux; \
     rm -r src src-svn man manual; \
     apt-get purge -y --auto-remove $buildDeps; \
     make-ssl-cert generate-default-snakeoil; \
-    ln -s /etc/ssl/private/ssl-cert-snakeoil.key /usr/local/apache2/conf/server.key; \
-    ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem /usr/local/apache2/conf/server.crt
+    mkdir -p /etc/ssl/localcerts; \
+    ln -s /etc/ssl/private/ssl-cert-snakeoil.key /etc/ssl/localcerts/server.key; \
+    ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/localcerts/server.crt; \
+    rm -f $HTTPD_PREFIX/conf/httpd.conf; \
+    ln -s /svn/config/httpd.conf $HTTPD_PREFIX/conf/httpd.conf
 
 COPY scripts/*.sh /usr/local/bin/
-COPY httpd-conf/httpd.conf $HTTPD_PREFIX/conf/
-COPY svn-conf/* /svn/config/
 
 EXPOSE 80 443
 CMD ["httpd-foreground.sh"]
