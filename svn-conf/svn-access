@@ -1,5 +1,5 @@
 #
-# Example file, please see Path-Based Authorization in the Subversion documentation.
+# Please see Path-Based Authorization in the Subversion documentation.
 #
 # Groups can be defined with users and used with @. Aliases can be defined and referred to with &.
 # Directories or by all means files are referred to as:
@@ -13,12 +13,15 @@
 #
 # The pre-defined tokens $authenticated and $anonymous can also be used.
 #
-[groups]
-admins = admin
-example_users = example_user
-
+# Example:
+#
+# [groups]
+# admins = admin
+# example_users = example_user
+#
+# [ExampleRepo:/]
+# @example_users = rw
+#
+# Default rule below grants full read/write access to all authenticated users.
 [/]
-@admins = rw
-
-[ExampleRepo:/]
-@example_users = rw
+$authenticated = rw
