@@ -2,9 +2,9 @@ FROM debian:jessie-backports
 LABEL name="httpd-svn" \
       description="Apache httpd with Subversion" \
       maintainer="erik.wramner@codemint.com" \
-      version="2.4.35-1.10.2-01"
+      version="2.4.34-1.10.2-02"
 
-ENV HTTPD_VERSION 2.4.35
+ENV HTTPD_VERSION 2.4.34
 ENV HTTPD_SHA256 fa53c95631febb08a9de41fd2864cfff815cf62d9306723ab0d4b8d7aa1638f0
 ENV SVN_VERSION 1.10.2
 ENV SVN_SHA512  ccbe860ec93a198745e40620cb7e005a85797e344a99ddbc0e24c32ad846976eae35cf5b3d62ba5751b998f0d40bbebbba72f484d92c92693bbb2112c989b129
