@@ -1,15 +1,13 @@
-FROM debian:jessie-backports
+FROM debian:stretch-slim
 LABEL name="httpd-svn" \
       description="Apache httpd with Subversion" \
       maintainer="erik.wramner@codemint.com" \
-      version="2.4.37-1.10.3-01"
+      version="2.4.38-1.11.1-01"
 
-ENV HTTPD_VERSION 2.4.37
-ENV HTTPD_SHA256 3498dc5c6772fac2eb7307dc7963122ffe243b5e806e0be4fb51974ff759d726
-ENV SVN_VERSION 1.10.3
-ENV SVN_SHA512  e753c76be2c7a7d1e47ef70a417f33ad48a5076ddbe02062b478b0baf8ce063f101aab3a86895e33f6277f273917b87d8c07b002e3e4f9fe3a750a2f8142ef6d
-ENV NGHTTP2_VERSION 1.18.1-1
-ENV OPENSSL_VERSION 1.0.2l-1~bpo8+1
+ENV HTTPD_VERSION 2.4.38
+ENV HTTPD_SHA256 7dc65857a994c98370dc4334b260101a7a04be60e6e74a5c57a6dee1bc8f394a
+ENV SVN_VERSION 1.11.1
+ENV SVN_SHA512 2d082f715bf592ffc6a19311a9320dbae2ff0ee126b0472ce1c3f10e9aee670f43d894889430e6d093620f7b69c611e9a26773bc7a2f8b599ec37540ecd84a8d
 ENV HTTPD_PREFIX /usr/local/apache2
 ENV PATH $HTTPD_PREFIX/bin:$PATH
 
@@ -22,38 +20,6 @@ COPY conf/* /svn/config/
 VOLUME ["/svn"]
 
 WORKDIR $HTTPD_PREFIX
-
-RUN { \
-        echo 'deb http://deb.debian.org/debian stretch main'; \
-    } > /etc/apt/sources.list.d/stretch.list \
-    && { \
-# add a negative "Pin-Priority" so that we never ever get packages from stretch unless we explicitly request them
-        echo 'Package: *'; \
-        echo 'Pin: release n=stretch'; \
-        echo 'Pin-Priority: -10'; \
-        echo; \
-# except nghttp2, which is the reason we're here
-        echo 'Package: libnghttp2*'; \
-        echo "Pin: version $NGHTTP2_VERSION"; \
-        echo 'Pin-Priority: 990'; \
-        echo; \
-    } > /etc/apt/preferences.d/unstable-nghttp2
-
-# install httpd runtime dependencies
-# https://httpd.apache.org/docs/2.4/install.html#requirements
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        libapr1 \
-        libaprutil1 \
-        libaprutil1-ldap \
-        libapr1-dev \
-        libaprutil1-dev \
-        liblua5.2-0 \
-        libnghttp2-14=$NGHTTP2_VERSION \
-        libpcre++0 \
-        libssl1.0.0=$OPENSSL_VERSION \
-        libxml2 \
-    && rm -r /var/lib/apt/lists/*
 
 # https://httpd.apache.org/security/vulnerabilities_24.html
 ENV HTTPD_PATCHES=""
@@ -69,24 +35,29 @@ ENV APACHE_DIST_URLS \
 # see https://httpd.apache.org/docs/2.4/install.html#requirements
 # plus libsqlite3-dev for svn
 RUN set -eux; \
-    \
-    # mod_http2 mod_lua mod_proxy_html mod_xml2enc
-    # https://anonscm.debian.org/cgit/pkg-apache/apache2.git/tree/debian/control?id=adb6f181257af28ee67af15fc49d2699a0080d4c
-    \
     runtimeDeps=" \
         ca-certificates \
         bzip2 \
         libsqlite3-0 \
         ssl-cert \
         zlib1g \
+        libapr1 \
+        libaprutil1 \
+        libaprutil1-ldap \
+        liblua5.2 \
+        libxml2 \
     "; \
     buildDeps=" \
         dpkg-dev \
+        dirmngr \
         gcc \
+        gnupg \
+        libapr1-dev \
+        libaprutil1-dev \
         liblua5.2-dev \
-        libnghttp2-dev=$NGHTTP2_VERSION \
-        libpcre++-dev \
-        libssl-dev=$OPENSSL_VERSION \
+        libnghttp2-dev \
+        libpcre3-dev \
+        libssl-dev \
         libsqlite3-dev \
         libxml2-dev \
         zlib1g-dev \
@@ -123,13 +94,14 @@ RUN set -eux; \
     ddist 'httpd.tar.bz2.asc' "httpd/httpd-$HTTPD_VERSION.tar.bz2.asc"; \
     ddist 'subversion.tar.bz2.asc' "subversion/subversion-$SVN_VERSION.tar.bz2.asc"; \
     export GNUPGHOME="$(mktemp -d)"; \
+    echo "disable-ipv6" >> $GNUPGHOME/dirmngr.conf; \
     for key in \
 # gpg: key 791485A8: public key "Jim Jagielski (Release Signing Key) <jim@apache.org>" imported
         A93D62ECC3C8EA12DB220EC934EA76E6791485A8 \
 # gpg: key 995E35221AD84DFF: public key "Daniel Ruggeri (http://home.apache.org/~druggeri/) <druggeri@apache.org>" imported
         B9E8213AEFB861AF35A41F2C995E35221AD84DFF \
     ; do \
-        gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+        gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
     done; \
     gpg --batch --verify httpd.tar.bz2.asc httpd.tar.bz2; \
     wget -O subversion.asc https://people.apache.org/keys/group/subversion.asc; \
