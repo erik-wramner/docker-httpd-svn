@@ -2,10 +2,10 @@ FROM debian:stretch-slim
 LABEL name="httpd-svn" \
       description="Apache httpd with Subversion" \
       maintainer="erik.wramner@codemint.com" \
-      version="2.4.38-1.11.1-01"
+      version="2.4.39-1.11.1-01"
 
-ENV HTTPD_VERSION 2.4.38
-ENV HTTPD_SHA256 7dc65857a994c98370dc4334b260101a7a04be60e6e74a5c57a6dee1bc8f394a
+ENV HTTPD_VERSION 2.4.39
+ENV HTTPD_SHA256 b4ca9d05773aa59b54d66cd8f4744b945289f084d3be17d7981d1783a5decfa2
 ENV SVN_VERSION 1.11.1
 ENV SVN_SHA512 2d082f715bf592ffc6a19311a9320dbae2ff0ee126b0472ce1c3f10e9aee670f43d894889430e6d093620f7b69c611e9a26773bc7a2f8b599ec37540ecd84a8d
 ENV HTTPD_PREFIX /usr/local/apache2
